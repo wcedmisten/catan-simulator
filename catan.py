@@ -101,8 +101,9 @@ print([(resource, total / float(NUM_TURNS)) for resource, total in totals.items(
 
 print(rolls)
 
+# 3 characters wide
 def tile(row, column):
-    return f"{board[row][column][0].name} {board[row][column][1]}"
+    return f"{board[row][column][0].name[0]}{board[row][column][1]:2}"
 
 print(tile(0, 0))
 
@@ -112,31 +113,31 @@ board_string = rf"""
                 /     \     /     \     /     \
               /         \ /         \ /         \
              |           |           |           |
-             |           |           |           |
+             |    {tile(0, 0)}    |    {tile(0, 1)}    |    {tile(0, 2)}    |
              |           |           |           |
             / \         / \         / \         / \
           /     \     /     \     /     \     /     \
         /         \ /         \ /         \ /         \
        |           |           |           |           |
-       |           |           |           |           |
+       |    {tile(1, 0)}    |    {tile(1, 1)}    |    {tile(1, 2)}    |    {tile(1, 3)}    |
        |           |           |           |           |
       / \         / \         / \         / \         / \
     /     \     /     \     /     \     /     \     /     \
   /         \ /         \ /         \ /         \ /         \
  |           |           |           |           |           |
- |           |           |           |           |           |
+ |    {tile(2, 0)}    |    {tile(2, 1)}    |    {tile(2, 2)}    |    {tile(2, 3)}    |    {tile(2, 4)}    |
  |           |           |           |           |           |
   \         / \         / \         / \         / \         /
     \     /     \     /     \     /     \     /     \     / 
       \ /         \ /         \ /         \ /         \ /
        |           |           |           |           |
-       |           |           |           |           |
+       |    {tile(3, 0)}    |    {tile(3, 1)}    |    {tile(3, 2)}    |    {tile(3, 3)}    |
        |           |           |           |           |
         \         / \         / \         / \         /
           \     /     \     /     \     /     \     /
             \ /         \ /         \ /         \ /
              |           |           |           |
-             |           |           |           |
+             |    {tile(4, 0)}    |    {tile(4, 1)}    |    {tile(4, 2)}    |
              |           |           |           |
               \         / \         / \         /
                 \     /     \     /     \     /
