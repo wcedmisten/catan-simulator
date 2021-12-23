@@ -82,25 +82,6 @@ item_prices = {
     }]
 }
 
-# NUM_TURNS = 1
-
-# rolls = {}
-
-# for i in range(2, 13):
-#     rolls[i] = 0
-
-# for i in range(NUM_TURNS):
-#     roll = random.randint(1, 6) + random.randint(1, 6)
-#     rolls[roll] += 1
-#     for resource, num in [item for sublist in board for item in sublist]:
-#         if roll == num:
-#             totals[resource] += 1
-
-# print("Average resource per turn:")
-# print([(resource, total / float(NUM_TURNS)) for resource, total in totals.items()])
-
-# print(rolls)
-
 num_dots = {
     0: 0,
     2: 1,
@@ -315,6 +296,64 @@ for player in player_order:
             break
         # else:
             # print("Could not place", r, c)
-        
-# for space in spaces:
-#     print(space)
+
+rolls = {}
+
+player_resources = {
+    '1': {
+        R.WOOD: 0,
+        R.SHEEP: 0,
+        R.HAY: 0,
+        R.ROCK: 0,
+        R.BRICK: 0
+    },
+    '2': {
+        R.WOOD: 0,
+        R.SHEEP: 0,
+        R.HAY: 0,
+        R.ROCK: 0,
+        R.BRICK: 0
+    },
+    '3': {
+        R.WOOD: 0,
+        R.SHEEP: 0,
+        R.HAY: 0,
+        R.ROCK: 0,
+        R.BRICK: 0
+    },
+    '4': {
+        R.WOOD: 0,
+        R.SHEEP: 0,
+        R.HAY: 0,
+        R.ROCK: 0,
+        R.BRICK: 0
+    }
+}
+
+
+NUM_TURNS = 10000
+
+for i in range(NUM_TURNS):
+    roll = random.randint(1, 6) + random.randint(1, 6)
+
+    for r, row in enumerate(spaces):
+        for c, col in enumerate(row):
+            if col:
+                player = col[0]
+                tiles = space_tile_lookup[r][c]
+                for tile_row, tile_col in tiles:
+                    resource = board[tile_row][tile_col][0]
+                    if roll == board[tile_row][tile_col][1]:
+                        player_resources[player][resource] += 1
+
+print("Average resource per turn:")
+for key, val in player_resources.items():
+    print("player", key)
+    total = 0
+    for resource, qty in val.items():
+        print(resource, qty / float(NUM_TURNS))
+        total += qty / float(NUM_TURNS)
+    print("Total: ", total)
+    print()
+
+# pprint.pprint(player_resources)
