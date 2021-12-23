@@ -3,27 +3,29 @@ from enum import Enum
 from colorama import Fore
 from colorama import Style
 
+import pprint
+
 import itertools
 
 class R(Enum):
     ROCK = 'R',
     WOOD = 'F',
-    WHEAT = 'W',
+    HAY = 'W',
     SHEEP = 'S',
     BRICK = 'B',
     DESERT = 'D'
 
 board = [[(R.ROCK, 9), (R.WOOD, 11), (R.SHEEP, 6)],
-       [(R.WHEAT, 4), (R.WOOD, 3), (R.WHEAT, 2), (R.SHEEP, 5)],
-      [(R.SHEEP, 11), (R.ROCK, 8), (R.DESERT, 0), (R.ROCK, 10), (R.WHEAT, 9)],
-       [(R.BRICK, 10), (R.SHEEP, 5), (R.BRICK, 12), (R.WHEAT, 4)],
+       [(R.HAY, 4), (R.WOOD, 3), (R.HAY, 2), (R.SHEEP, 5)],
+      [(R.SHEEP, 11), (R.ROCK, 8), (R.DESERT, 0), (R.ROCK, 10), (R.HAY, 9)],
+       [(R.BRICK, 10), (R.SHEEP, 5), (R.BRICK, 12), (R.HAY, 4)],
          [(R.WOOD, 6), (R.WOOD, 3), (R.ROCK, 8)]]
 
 
 totals = {
     R.ROCK: 0,
     R.WOOD:  0,
-    R.WHEAT: 0,
+    R.HAY: 0,
     R.SHEEP: 0,
     R.BRICK: 0,
 }
@@ -127,12 +129,40 @@ fmt_dots = {
 def dots(row, column):
     return fmt_dots[num_dots[board[row][column][1]]]
 
+
+"""
+Coordinate system for hexagons:
+
+first, third, and fifth rows count off by 2s
+
+0:  2 4 6
+1: 1 3 5 7
+2:0 2 4 6 8
+3: 1 3 5 7
+4   2 4 6
+  012345678
+"""
+
+spaces = [
+    [None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None],
+]
+
+def spce(r, c):
+    if spaces[r][c] is None:
+        return " "
+    return spaces[r][c]
+
 board_string = rf"""
 
-                  / \         / \         / \
+                  /{spce(0,1)}\         /{spce(0,3)}\         /{spce(0,5)}\
                 /     \     /     \     /     \
-              /         \ /         \ /         \
-             |           |           *           |
+             {spce(0,0)}/         \{spce(0,2)}/         \{spce(0,4)}/         \{spce(0,6)}
+             |           |                       |
              |    {tile(0, 0)}    |    {tile(0, 1)}    |    {tile(0, 2)}    |
              |    {dots(0, 0)}    |    {dots(0, 1)}    |    {dots(0, 2)}    |
             / \         / \         / \         / \
@@ -166,67 +196,30 @@ board_string = rf"""
 
 print(board_string)
 
+space_tile_lookup = [
+    [[(0,0)], [(0,0)], [(0,0),(0,1)], [(0,1)], [(0,1), (0,2)], [(0,2)], [(0,2)]],
+    [[(1,0)], [(1,0), (0,0)], [(0,0),(1,0),(1,1)], [(0, 0), (1,1), (0,1)], [(1,1), (0,1), (1,2)], [(0,1),(1,2),(0,2)], [(1,2), (0,2),(1,3)], [(0,2),(1,3)], [(1,3)]],
+    [[(2,0)], [(2,0), (1,0)], [(1,0), (2,0), (2,1)], [(2,0), (2,1), (1,1)], [(2,1), (2,2), (1,1)], [(1,1),(1,2),(2,2)], [(2,2),(2,3),(1,2)], [(1,2),(1,3),(2,3)], [(2,3),(2,4),(1,3)], [(1,3),(2,4)], [(2,4)]],
+    [[(2,0)], [(2,0),(3,0)], [(2,0),(3,0),(2,1)], [(3,0),(3,1),(2,1)], [(2,1),(2,2),(3,1)], [(3,1),(3,2),(2,2)], [(2,2),(2,3),(3,2)], [(3,2),(3,3),(2,3)], [(2,3),(2,4),(3,3)], [(2,4),(3,3)], [(2,4)]],
+    [[(3,0)], [(3,0),(4,0)], [(3,0),(4,0),(3,1)], [(4,0),(4,1),(3,1)], [(3,1),(3,2),(4,1)], [(4,1),(4,2),(3,2)], [(3,2),(3,3),(4,2)], [(3,3),(4,2)], [(3,3)]],
+    [[(4,0)], [(4,0)], [(4,0),(4,1)], [(4,1)], [(4,1),(4,2)], [(4,2)], [(4,2)]],
+]
 
-"""
-Coordinate system for hexagons:
+score_map = {
 
-first, third, and fifth rows count off by 2s
+}
 
-0:  2 4 6
-1: 1 3 5 7
-2:0 2 4 6 8
-3: 1 3 5 7
-4   2 4 6
-  012345678
-"""
+for r, row in enumerate(spaces):
+    for c, col in enumerate(row):
+        tiles = space_tile_lookup[r][c]
+        total = 0
+        for tile in tiles:
+            r1, c1 = tile
+            total += num_dots[board[r1][c1][1]]
+        # print(r, c, total)
+        if total not in score_map:
+            score_map[total] = []
 
-# idx_from_coordinates = {
+        score_map[total].append((r, c))
 
-# }
-
-
-# def board_column(row, idx):
-#     col = [[2, 4, 6], [1, 3, 5, 7], [0, 2, 4, 6, 8], [1, 3, 5, 7], [2, 4, 6]][row][idx]
-#     idx_from_coordinates[(row, col)] = idx
-#     return [[2, 4, 6], [1, 3, 5, 7], [0, 2, 4, 6, 8], [1, 3, 5, 7], [2, 4, 6]][row][idx]
-
-# # store all valid tile coordinates
-# board_coordinate_set = set()
-# for i in range(5):
-#     for j in range(5):
-#         try:
-#          board_coordinate_set.add((i, board_column(i, j)))
-#         except Exception:
-#             pass
-
-# # store pair of neighbors being compared to find the best space
-# visited = set()
-
-
-# def are_neigbors(r1, c1, r2, c2):
-#     return (abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1) or (r1 == r2 and abs(c1 - c2) <= 2)
-
-
-# def find_neighbors(x, y):
-#     neighbors = set()
-#     for r,c in (board_coordinate_set - set({(y, x)})):
-#         if are_neigbors(y, x, r, c):
-#             neighbors.add((r, c))
-#     return neighbors
-
-# spot_scores = {}
-
-# for r,c in board_coordinate_set:    
-#     total_dots = 0
-#     idx = idx_from_coordinates[(r, c)]
-#     print(r, c, idx, num_dots[board[r][idx][1]])
-#     neighbors = find_neighbors(c, r)
-#     print(neighbors)
-#     mutual_neighbors = set()
-#     for n1, n2 in list(itertools.combinations(neighbors, 2)):
-#         if are_neigbors(n1[0], n1[1], n2[0], n2[1]):
-#             mutual_neighbors.add((n1, n2))
-
-#     print(mutual_neighbors)
-#     print("~~~~~~~~")
-
+pprint.pprint(score_map)
