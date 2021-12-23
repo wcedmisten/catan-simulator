@@ -1,7 +1,10 @@
 import random
 from enum import Enum
 from colorama import Fore
+from colorama import Back
 from colorama import Style
+
+import os
 
 import pprint
 
@@ -98,10 +101,6 @@ item_prices = {
 
 # print(rolls)
 
-# 3 characters wide
-def tile(row, column):
-    return f"{board[row][column][0].name[0]}{board[row][column][1]:2}"
-
 num_dots = {
     0: 0,
     2: 1,
@@ -126,10 +125,6 @@ fmt_dots = {
   6: ':::'
 }
 
-def dots(row, column):
-    return fmt_dots[num_dots[board[row][column][1]]]
-
-
 """
 Coordinate system for hexagons:
 
@@ -144,17 +139,47 @@ first, third, and fifth rows count off by 2s
 """
 
 spaces = [
-    [None, None, None, None, None, None, None],
-    [None, None, '1@', None, None, None, None, '4@', None],
+                [None, None, None, None, None, None, None],
+          [None, None, None, None, None, None, None, None, None],
     [None, None, None, None, None, None, None, None, None, None, None],
-    [None, None, None, '2@', None, None, None, None, None, None, None],
-    [None, None, None, None, None, None, None, '3@', None],
-    [None, None, None, None, None, None, None],
+    [None, None, None, None, None, None, None, None, None, None, None],
+          [None, None, None, None, None, None, None, None, None],
+                [None, None, None, None, None, None, None],
 ]
+
+def is_adjacent_space(r1, c1, r2, c2):
+    row_offset_map = {
+        0: 2,
+        1: 1,
+        2: 0,
+        3: 0,
+        4: 1,
+        5: 2
+    }
+
+    if abs(c1 - c2) <= 1 and r1 == r2:
+        return True
+
+    offset_c1 = c1 + row_offset_map[r1]
+    offset_c2 = c2 + row_offset_map[r2]
+
+    # print(offset_c1, offset_c2, r1, r2)
+
+    if abs(r1 - r2) <= 1 and offset_c1 == offset_c2:
+        return True
+
+    return False
+
+# print(is_adjacent_space(2, 0, 3, 0))
+# print(is_adjacent_space(0, 1, 0, 2))
+# print(is_adjacent_space(0, 0, 1, 1))
+# print(is_adjacent_space(0, 0, 2, 1))
+# print(is_adjacent_space(0, 1, 1, 2))
+# print(is_adjacent_space(0, 2, 1, 3))
 
 # roads are marked as between two spaces, e.g.
 # row1, col1, row2, col2
-(0, 1, 0, 2)
+# (0, 1, 0, 2)
 
 player_colors = color = {
     '1': Fore.RED,
@@ -168,7 +193,67 @@ def spce(r, c):
         return " "
     return player_colors[spaces[r][c][0]] + spaces[r][c][1] + Style.RESET_ALL
 
-board_string = rf"""
+def dots(row, column):
+    return tile_colors[board[row][column][0]] + fmt_dots[num_dots[board[row][column][1]]] + Style.RESET_ALL
+
+
+space_tile_lookup = [
+    [[(0,0)], [(0,0)], [(0,0),(0,1)], [(0,1)], [(0,1),(0,2)], [(0,2)], [(0,2)]],
+    [[(1,0)], [(1,0),(0,0)], [(0,0),(1,0),(1,1)], [(0,0),(1,1),(0,1)], [(1,1),(0,1),(1,2)], [(0,1),(1,2),(0,2)], [(1,2),(0,2),(1,3)], [(0,2),(1,3)], [(1,3)]],
+    [[(2,0)], [(2,0),(1,0)], [(1,0),(2,0),(2,1)], [(2,0),(2,1),(1,1)], [(2,1),(2,2),(1,1)], [(1,1),(1,2),(2,2)], [(2,2),(2,3),(1,2)], [(1,2),(1,3),(2,3)], [(2,3),(2,4),(1,3)], [(1,3),(2,4)], [(2,4)]],
+    [[(2,0)], [(2,0),(3,0)], [(2,0),(3,0),(2,1)], [(3,0),(3,1),(2,1)], [(2,1),(2,2),(3,1)], [(3,1),(3,2),(2,2)], [(2,2),(2,3),(3,2)], [(3,2),(3,3),(2,3)], [(2,3),(2,4),(3,3)], [(2,4),(3,3)], [(2,4)]],
+    [[(3,0)], [(3,0),(4,0)], [(3,0),(4,0),(3,1)], [(4,0),(4,1),(3,1)], [(3,1),(3,2),(4,1)], [(4,1),(4,2),(3,2)], [(3,2),(3,3),(4,2)], [(3,3),(4,2)], [(3,3)]],
+    [[(4,0)], [(4,0)], [(4,0),(4,1)], [(4,1)], [(4,1),(4,2)], [(4,2)], [(4,2)]],
+]
+
+score_map = {
+
+}
+
+for r, row in enumerate(spaces):
+    for c, col in enumerate(row):
+        tiles = space_tile_lookup[r][c]
+        total = 0
+        for tile in tiles:
+            r1, c1 = tile
+            total += num_dots[board[r1][c1][1]]
+        if total not in score_map:
+            score_map[total] = []
+
+        score_map[total].append((r, c))
+
+def can_place(row, col):
+    for r, row1 in enumerate(spaces):
+        for c, col1 in enumerate(row1):
+            if spaces[r][c] and is_adjacent_space(r, c, row, col):
+                return False
+            
+    return True
+
+tile_colors = {
+    R.ROCK: Fore.WHITE,
+    R.SHEEP: Fore.GREEN,
+    R.WOOD: Fore.BLUE,
+    R.BRICK: Fore.RED,
+    R.HAY: Fore.MAGENTA,
+    R.DESERT: Fore.YELLOW
+}
+
+# 3 characters wide
+def tile(row, column):
+    resource = board[row][column][0]
+    quantity = board[row][column][1]
+    return tile_colors[resource] + f"{resource.name[0]}{quantity:2}" + Style.RESET_ALL
+            
+def board_string():
+    return rf"""
+    Legend: Player 1: {player_colors['1'] + '@' + Style.RESET_ALL}  {tile_colors[R.BRICK]}[B]rick{Style.RESET_ALL}
+            Player 2: {player_colors['2'] + '@' + Style.RESET_ALL}  {tile_colors[R.SHEEP]}[S]heep{Style.RESET_ALL}
+            Player 3: {player_colors['3'] + '@' + Style.RESET_ALL}  {tile_colors[R.WOOD]}[W]ood{Style.RESET_ALL}
+            Player 4: {player_colors['4'] + '@' + Style.RESET_ALL}  {tile_colors[R.HAY]}[H]ay{Style.RESET_ALL}
+                         {tile_colors[R.ROCK]}[R]ock{Style.RESET_ALL}
+                         {tile_colors[R.DESERT]}[D]esert{Style.RESET_ALL}
+
                   /{spce(0,1)}\         /{spce(0,3)}\         /{spce(0,5)}\
                 /     \     /     \     /     \
              {spce(0,0)}/         \{spce(0,2)}/         \{spce(0,4)}/         \{spce(0,6)}
@@ -204,31 +289,32 @@ board_string = rf"""
                   \{spce(5,1)}/         \{spce(5,3)}/         \{spce(5,5)}/
 """
 
-print(board_string)
 
-space_tile_lookup = [
-    [[(0,0)], [(0,0)], [(0,0),(0,1)], [(0,1)], [(0,1),(0,2)], [(0,2)], [(0,2)]],
-    [[(1,0)], [(1,0),(0,0)], [(0,0),(1,0),(1,1)], [(0,0),(1,1),(0,1)], [(1,1),(0,1),(1,2)], [(0,1),(1,2),(0,2)], [(1,2),(0,2),(1,3)], [(0,2),(1,3)], [(1,3)]],
-    [[(2,0)], [(2,0),(1,0)], [(1,0),(2,0),(2,1)], [(2,0),(2,1),(1,1)], [(2,1),(2,2),(1,1)], [(1,1),(1,2),(2,2)], [(2,2),(2,3),(1,2)], [(1,2),(1,3),(2,3)], [(2,3),(2,4),(1,3)], [(1,3),(2,4)], [(2,4)]],
-    [[(2,0)], [(2,0),(3,0)], [(2,0),(3,0),(2,1)], [(3,0),(3,1),(2,1)], [(2,1),(2,2),(3,1)], [(3,1),(3,2),(2,2)], [(2,2),(2,3),(3,2)], [(3,2),(3,3),(2,3)], [(2,3),(2,4),(3,3)], [(2,4),(3,3)], [(2,4)]],
-    [[(3,0)], [(3,0),(4,0)], [(3,0),(4,0),(3,1)], [(4,0),(4,1),(3,1)], [(3,1),(3,2),(4,1)], [(4,1),(4,2),(3,2)], [(3,2),(3,3),(4,2)], [(3,3),(4,2)], [(3,3)]],
-    [[(4,0)], [(4,0)], [(4,0),(4,1)], [(4,1)], [(4,1),(4,2)], [(4,2)], [(4,2)]],
-]
+player_order = ['1', '2', '3', '4', '4', '3', '2', '1']
 
-score_map = {
+print(board_string())
+input("Waiting for user input...")
 
-}
+for player in player_order:
+    best = sorted(score_map.items(), reverse=True)
 
-for r, row in enumerate(spaces):
-    for c, col in enumerate(row):
-        tiles = space_tile_lookup[r][c]
-        total = 0
-        for tile in tiles:
-            r1, c1 = tile
-            total += num_dots[board[r1][c1][1]]
-        if total not in score_map:
-            score_map[total] = []
+    for key, val in best:
+        # print(key, val)
 
-        score_map[total].append((r, c))
+        if len(val) == 0:
+            score_map.pop(key, None)
+            continue
 
-# pprint.pprint(score_map)
+        r, c = val.pop(0)
+        if can_place(r, c):
+            spaces[r][c] = player + "@"
+            os.system('clear')
+            print(f"Placing player: {player}")
+            print(board_string())
+            input("Waiting for user input...")
+            break
+        # else:
+            # print("Could not place", r, c)
+        
+# for space in spaces:
+#     print(space)
